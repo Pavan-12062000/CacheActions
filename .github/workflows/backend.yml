@@ -48,7 +48,7 @@ jobs:
       # Step 6: Install dependencies
       - name: Install Dependencies
         if: steps.cache-node-modules.outputs.cache-hit != 'true'  # Only install if cache is missing
-        run: npm ci
+        run: npm install
 
       # Step 7: Build the application (if required)
       - name: Build Application
