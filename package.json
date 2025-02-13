@@ -12,7 +12,7 @@
   "scripts": {
     "start": "node app.js",
     "start:dev": "nodemon --watch app.js --watch books.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "echo \"No tests available. Skipping.\"",
     "build": "echo 'No build step required for this project'"
   },
   "repository": {
