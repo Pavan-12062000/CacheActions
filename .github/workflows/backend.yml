@@ -30,7 +30,11 @@ jobs:
         if: steps.cache-depot.outputs.cache-hit != 'true'
         run: |
           curl -fsSL https://depot.dev/install.sh | sh
-          echo "$HOME/.depot/bin" >> $GITHUB_PATH
+          export PATH=$HOME/.depot/bin:$PATH
+          echo "Depot CLI installed and added to PATH."
+
+      - name: Verify Depot CLI Installation
+        run: depot --version  # This will confirm if Depot is installed successfully
 
       - name: Authenticate Depot
         run: depot auth login --token ${{ secrets.DEPOT_TOKEN }}
