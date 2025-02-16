@@ -26,15 +26,15 @@ jobs:
           path: ~/.depot
           key: ${{ runner.os }}-depot-cli
 
-      - name: Install Depot CLI
+      - name: Install Depot CLI via npm
         if: steps.cache-depot.outputs.cache-hit != 'true'
         run: |
-          curl -fsSL https://depot.dev/install.sh | sh
-          export PATH=$HOME/.depot/bin:$PATH
+          npm install -g depot-cli
+          export PATH=$(npm bin -g):$PATH
           echo "Depot CLI installed and added to PATH."
 
       - name: Verify Depot CLI Installation
-        run: depot --version  # This will confirm if Depot is installed successfully
+        run: depot --version
 
       - name: Authenticate Depot
         run: depot auth login --token ${{ secrets.DEPOT_TOKEN }}
