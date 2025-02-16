@@ -3,71 +3,58 @@ name: CI/CD for Node.js Backend
 on:
   push:
     branches:
-      - main  # Run CI/CD when code is pushed to main
+      - main
   pull_request:
     branches:
-      - main  # Run CI/CD for PRs to main
+      - main
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Set up job
       - name: Set up job
         run: echo "Initializing CI/CD pipeline..."
 
-      # Step 2: Checkout code from the repository
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # Step 3: Compute cache key
-      - name: Compute Cache Key
-        id: compute-cache-key
-        run: echo "CACHE_KEY=${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}" >> $GITHUB_ENV
-
-      # Step 4: Cache node_modules
-      - name: Cache node_modules
-        id: cache-node-modules
+      - name: Cache Depot CLI
+        id: cache-depot
         uses: actions/cache@v3
         with:
-          path: ~/.npm  # Cache directory for npm dependencies
-          key: ${{ env.CACHE_KEY }}
-          restore-keys: |
-            ${{ runner.os }}-node-
+          path: ~/.depot
+          key: ${{ runner.os }}-depot-cli
 
-      # Step 5: Print Cache Status
-      - name: Print Cache Status
+      - name: Install Depot CLI
+        if: steps.cache-depot.outputs.cache-hit != 'true'
         run: |
-          if [[ "${{ steps.cache-node-modules.outputs.cache-hit }}" == 'true' ]]; then
-            echo "✅ Cache hit! Using cache key: ${{ env.CACHE_KEY }}"
+          curl -fsSL https://depot.dev/install.sh | sh
+          echo "$HOME/.depot/bin" >> $GITHUB_PATH
+
+      - name: Authenticate Depot
+        run: depot auth login --token ${{ secrets.DEPOT_TOKEN }}
+
+      - name: Install Dependencies with Depot Cache
+        run: |
+          if [ -d "node_modules" ]; then
+            echo "✅ Cache hit! Using cached dependencies."
           else
-            echo "❌ Cache miss! Dependencies will be installed from scratch."
+            echo "❌ Cache miss! Installing dependencies from scratch."
           fi
+          depot exec npm install
 
-      # Step 6: Install dependencies
-      - name: Install Dependencies
-        if: steps.cache-node-modules.outputs.cache-hit != 'true'  # Only install if cache is missing
-        run: npm install
-
-      # Step 7: Build the application (if required)
       - name: Build Application
-        run: npm run build # Modify if your backend has a build step
+        run: |
+          if [ -d "dist" ]; then
+            echo "✅ Cache hit! Using cached build."
+          else
+            echo "❌ Cache miss! Rebuilding application."
+          fi
+          depot exec npm run build
 
-      # Step 8: Run tests
       - name: Run Tests
-        run: npm test
+        run: depot exec npm test
 
-      # Step 9: Post-Job Cache Cleanup (optional)
-      - name: Post Cache Cleanup
-        if: always()
-        run: echo "Cache will be maintained automatically by GitHub Actions"
-
-      # Step 10: Post-run Checkout
-      - name: Post-run Checkout
-        if: always()
-        run: echo "Post-run cleanup complete"
-
-      # Step 11: Complete Job
       - name: Complete Job
         run: echo "Build & Test Completed!"
