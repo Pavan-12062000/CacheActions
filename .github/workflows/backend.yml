@@ -19,34 +19,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Cache Depot CLI
+      - name: Cache node_modules with Depot (without installing Depot CLI)
         id: cache-depot
         uses: actions/cache@v3
         with:
-          path: ~/.depot
-          key: ${{ runner.os }}-depot-cli
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-modules-
 
-      - name: Install Depot CLI via npm
+      - name: Install Dependencies (only if needed)
         if: steps.cache-depot.outputs.cache-hit != 'true'
-        run: |
-          npm install -g depot-cli
-          export PATH=$(npm bin -g):$PATH
-          echo "Depot CLI installed and added to PATH."
-
-      - name: Verify Depot CLI Installation
-        run: depot --version
-
-      - name: Authenticate Depot
-        run: depot auth login --token ${{ secrets.DEPOT_TOKEN }}
-
-      - name: Install Dependencies with Depot Cache
-        run: |
-          if [ -d "node_modules" ]; then
-            echo "✅ Cache hit! Using cached dependencies."
-          else
-            echo "❌ Cache miss! Installing dependencies from scratch."
-          fi
-          depot exec npm install
+        run: npm install
 
       - name: Build Application
         run: |
@@ -55,10 +39,10 @@ jobs:
           else
             echo "❌ Cache miss! Rebuilding application."
           fi
-          depot exec npm run build
+          npm run build
 
       - name: Run Tests
-        run: depot exec npm test
+        run: npm test
 
       - name: Complete Job
         run: echo "Build & Test Completed!"
